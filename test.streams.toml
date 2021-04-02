@@ -1,0 +1,26 @@
+[[streams]]
+city   = "Varied"
+label  = "yo"
+link   = "https://twitch.tv/woke"
+notes  = "Live protest streams from around the world."
+source = "woke.net"
+
+[[streams]]
+kind  = "web"
+label = "zombocom"
+link  = "https://html5zombo.com"
+
+[[streams]]
+kind = "video"
+label = "Ruptly"
+link = "https://www.youtube.com/watch?v=yRaexSu4N1Y"
+
+[[streams]]
+kind = "video"
+label = "Subject Access"
+link = "https://www.youtube.com/watch?v=ojpbjFsr04c"
+
+[[streams]]
+kind = "video"
+label = "Immortal Aliens"
+link = "https://www.youtube.com/watch?v=gn62m0Mgwkc"
