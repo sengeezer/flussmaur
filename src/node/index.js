@@ -1,12 +1,12 @@
-import fs from 'fs'
-import path from 'path'
-import yargs from 'yargs'
-import TOML from '@iarna/toml'
-import * as Y from 'yjs'
-import * as Sentry from '@sentry/electron'
-import { app, shell, session, BrowserWindow } from 'electron'
+import fs from 'fs';
+import path from 'path';
+import yargs from 'yargs';
+import TOML from '@iarna/toml';
+import * as Y from 'yjs';
+import * as Sentry from '@sentry/electron';
+import { app, shell, session, BrowserWindow } from 'electron';
 
-import { ensureValidURL } from '../util'
+import { ensureValidURL } from '../util';
 import {
   pollDataURL,
   watchDataFile,
@@ -14,21 +14,21 @@ import {
   StreamIDGenerator,
   markDataSource,
   combineDataSources,
-} from './data'
-import * as persistence from './persistence'
-import { Auth, StateWrapper } from './auth'
-import StreamWindow from './StreamWindow'
-import TwitchBot from './TwitchBot'
-import StreamdelayClient from './StreamdelayClient'
-import initWebServer from './server'
+} from './data';
+import * as persistence from './persistence';
+import { Auth, StateWrapper } from './auth';
+import StreamWindow from './StreamWindow';
+import TwitchBot from './TwitchBot';
+import StreamdelayClient from './StreamdelayClient';
+import initWebServer from './server';
 
 const SENTRY_DSN =
-  'https://e630a21dcf854d1a9eb2a7a8584cbd0b@o459879.ingest.sentry.io/5459505'
+  'https://e630a21dcf854d1a9eb2a7a8584cbd0b@o459879.ingest.sentry.io/5459505';
 
 function parseArgs() {
   return yargs
     .config('config', (configPath) => {
-      return TOML.parse(fs.readFileSync(configPath, 'utf-8'))
+      return TOML.parse(fs.readFileSync(configPath, 'utf-8'));
     })
     .group(['grid.count'], 'Grid dimensions')
     .option('grid.count', {
@@ -207,31 +207,31 @@ function parseArgs() {
       boolean: true,
       default: true,
     })
-    .help().argv
+    .help().argv;
 }
 
 async function main() {
-  const argv = parseArgs()
+  const argv = parseArgs();
   if (argv.help) {
-    return
+    return;
   }
 
   if (argv.telemetry.sentry) {
-    Sentry.init({ dsn: SENTRY_DSN })
+    Sentry.init({ dsn: SENTRY_DSN });
   }
 
   // Reject all permission requests from web content.
   session
     .fromPartition('persist:session')
     .setPermissionRequestHandler((webContents, permission, callback) => {
-      callback(false)
-    })
+      callback(false);
+    });
 
-  const persistData = await persistence.load()
+  const persistData = await persistence.load();
 
-  const idGen = new StreamIDGenerator()
-  const localStreamData = new LocalStreamData()
-  const overlayStreamData = new LocalStreamData()
+  const idGen = new StreamIDGenerator();
+  const localStreamData = new LocalStreamData();
+  const overlayStreamData = new LocalStreamData();
 
   const streamWindow = new StreamWindow({
     gridCount: argv.grid.count,
@@ -241,19 +241,19 @@ async function main() {
     y: argv.window.y,
     frameless: argv.window.frameless,
     backgroundColor: argv.window['background-color'],
-  })
-  streamWindow.init()
+  });
+  streamWindow.init();
 
   const auth = new Auth({
     adminUsername: argv.control.username,
     adminPassword: argv.control.password,
     persistData: persistData.auth,
     logEnabled: true,
-  })
+  });
 
-  let browseWindow = null
-  let twitchBot = null
-  let streamdelayClient = null
+  let browseWindow = null;
+  let twitchBot = null;
+  let streamdelayClient = null;
 
   let clientState = new StateWrapper({
     config: {
@@ -266,107 +266,138 @@ async function main() {
     streams: [],
     views: [],
     streamdelay: null,
-  })
+  });
 
-  const stateDoc = new Y.Doc()
-  const viewsState = stateDoc.getMap('views')
+  const stateDoc = new Y.Doc();
+  const viewsState = stateDoc.getMap('views');
+
   stateDoc.transact(() => {
     for (let i = 0; i < argv.grid.count ** 2; i++) {
-      const data = new Y.Map()
-      data.set('streamId', '')
-      viewsState.set(i, data)
+      const data = new Y.Map();
+      data.set('streamId', '');
+      viewsState.set(i, data);
     }
-  })
+  });
+
   viewsState.observeDeep(() => {
     try {
-      const viewContentMap = new Map()
+      const viewContentMap = new Map();
+
       for (const [key, viewData] of viewsState) {
         const stream = clientState.info.streams.find(
           (s) => s._id === viewData.get('streamId'),
-        )
+        );
+
         if (!stream) {
-          continue
+          continue;
         }
+
         viewContentMap.set(key, {
           url: stream.link,
           kind: stream.kind || 'video',
-        })
+        });
       }
-      streamWindow.setViews(viewContentMap, clientState.info.streams)
+
+      streamWindow.setViews(viewContentMap, clientState.info.streams);
     } catch (err) {
-      console.error('Error updating views', err)
+      console.error('Error updating views', err);
     }
-  })
+  });
 
   const onMessage = async (msg, respond) => {
-    if (msg.type === 'set-listening-view') {
-      streamWindow.setListeningView(msg.viewIdx)
-    } else if (msg.type === 'set-view-background-listening') {
-      streamWindow.setViewBackgroundListening(msg.viewIdx, msg.listening)
-    } else if (msg.type === 'set-view-blurred') {
-      streamWindow.setViewBlurred(msg.viewIdx, msg.blurred)
-    } else if (msg.type === 'rotate-stream') {
-      overlayStreamData.update(msg.url, {
-        rotation: msg.rotation,
-      })
-    } else if (msg.type === 'update-custom-stream') {
-      localStreamData.update(msg.url, msg.data)
-    } else if (msg.type === 'delete-custom-stream') {
-      localStreamData.delete(msg.url)
-    } else if (msg.type === 'reload-view') {
-      streamWindow.reloadView(msg.viewIdx)
-    } else if (msg.type === 'browse' || msg.type === 'dev-tools') {
-      if (
-        msg.type === 'dev-tools' &&
-        browseWindow &&
-        !browseWindow.isDestroyed()
-      ) {
-        // DevTools needs a fresh webContents to work. Close any existing window.
-        browseWindow.destroy()
-        browseWindow = null
-      }
-      if (!browseWindow || browseWindow.isDestroyed()) {
-        browseWindow = new BrowserWindow({
-          webPreferences: {
-            nodeIntegration: false,
-            contextIsolation: true,
-            partition: 'persist:session',
-            sandbox: true,
-          },
-        })
-      }
-      if (msg.type === 'browse') {
-        ensureValidURL(msg.url)
-        browseWindow.loadURL(msg.url)
-      } else if (msg.type === 'dev-tools') {
-        streamWindow.openDevTools(msg.viewIdx, browseWindow.webContents)
-      }
-    } else if (msg.type === 'set-stream-censored' && streamdelayClient) {
-      streamdelayClient.setCensored(msg.isCensored)
-    } else if (msg.type === 'set-stream-running' && streamdelayClient) {
-      streamdelayClient.setStreamRunning(msg.isStreamRunning)
-    } else if (msg.type === 'create-invite') {
-      const { secret } = await auth.createToken({
-        kind: 'invite',
-        role: msg.role,
-        name: msg.name,
-      })
-      respond({ name: msg.name, secret })
-    } else if (msg.type === 'delete-token') {
-      auth.deleteToken(msg.tokenId)
+    switch (msg.type) {
+      case 'set-listening-view':
+        streamWindow.setListeningView(msg.viewIdx);
+        break;
+      case 'set-view-background-listening':
+        streamWindow.setViewBackgroundListening(msg.viewIdx, msg.listening);
+        break;
+      case 'set-view-blurred':
+        streamWindow.setViewBlurred(msg.viewIdx, msg.blurred);
+        break;
+      case 'rotate-stream':
+        overlayStreamData.update(msg.url, {
+          rotation: msg.rotation,
+        });
+        break;
+      case 'update-custom-stream':
+        localStreamData.update(msg.url, msg.data);
+        break;
+      case 'delete-custom-stream':
+        localStreamData.delete(msg.url);
+        break;
+      case 'reload-view':
+        streamWindow.reloadView(msg.viewIdx);
+        break;
+      case 'browse':
+        if (!browseWindow || browseWindow.isDestroyed()) {
+          browseWindow = new BrowserWindow({
+            webPreferences: {
+              nodeIntegration: false,
+              contextIsolation: true,
+              partition: 'persist:session',
+              sandbox: true,
+            },
+          });
+        }
+        ensureValidURL(msg.url);
+        browseWindow.loadURL(msg.url);
+        break;
+      case 'dev-tools':
+        if (browseWindow && !browseWindow.isDestroyed()) {
+          // DevTools needs a fresh webContents to work. Close any existing window.
+          browseWindow.destroy();
+          browseWindow = null;
+        }
+        if (!browseWindow || browseWindow.isDestroyed()) {
+          browseWindow = new BrowserWindow({
+            webPreferences: {
+              nodeIntegration: false,
+              contextIsolation: true,
+              partition: 'persist:session',
+              sandbox: true,
+            },
+          });
+        }
+        streamWindow.openDevTools(msg.viewIdx, browseWindow.webContents);
+        break;
+      case 'set-stream-censored':
+        if (streamdelayClient) {
+          streamdelayClient.setCensored(msg.isCensored);
+        }
+        break;
+      case 'set-stream-running':
+        if (streamdelayClient) {
+          streamdelayClient.setStreamRunning(msg.isStreamRunning);
+        }
+        break;
+      case 'create-invite':
+        const { secret } = await auth.createToken({
+          kind: 'invite',
+          role: msg.role,
+          name: msg.name,
+        });
+        respond({ name: msg.name, secret });
+        break;
+      case 'delete-token':
+        auth.deleteToken(msg.tokenId);
+        break;
+      default:
+        return;
     }
-  }
+  };
 
   function updateState(newState) {
-    clientState.update(newState)
-    streamWindow.onState(clientState.info)
+    clientState.update(newState);
+    streamWindow.onState(clientState.info);
     if (twitchBot) {
-      twitchBot.onState(clientState.info)
+      twitchBot.onState(clientState.info);
     }
   }
 
   if (argv.control.address) {
-    const webDistPath = path.join(app.getAppPath(), 'web')
+    const webDistPath = path.join(app.getAppPath(), 'web');
+
     await initWebServer({
       certDir: argv.cert.dir,
       certProduction: argv.cert.production,
@@ -380,9 +411,10 @@ async function main() {
       clientState,
       onMessage,
       stateDoc,
-    })
+    });
+
     if (argv.control.open) {
-      shell.openExternal(argv.control.address)
+      shell.openExternal(argv.control.address);
     }
   }
 
@@ -390,33 +422,35 @@ async function main() {
     streamdelayClient = new StreamdelayClient({
       endpoint: argv.streamdelay.endpoint,
       key: argv.streamdelay.key,
-    })
+    });
+
     streamdelayClient.on('state', (state) => {
-      updateState({ streamdelay: state })
-    })
-    streamdelayClient.connect()
+      updateState({ streamdelay: state });
+    });
+    
+    streamdelayClient.connect();
   }
 
   if (argv.twitch.token) {
-    twitchBot = new TwitchBot(argv.twitch)
+    twitchBot = new TwitchBot(argv.twitch);
     twitchBot.on('setListeningView', (idx) => {
-      streamWindow.setListeningView(idx)
-    })
-    twitchBot.connect()
+      streamWindow.setListeningView(idx);
+    });
+    twitchBot.connect();
   }
 
   streamWindow.on('state', (viewStates) => {
-    updateState({ views: viewStates })
-  })
+    updateState({ views: viewStates });
+  });
 
   streamWindow.on('close', () => {
-    process.exit(0)
-  })
+    process.exit(0);
+  });
 
   auth.on('state', (authState) => {
-    updateState({ auth: authState })
-    persistence.save({ auth: auth.getPersistData() })
-  })
+    updateState({ auth: authState });
+    persistence.save({ auth: auth.getPersistData() });
+  });
 
   const dataSources = [
     ...argv.data['json-url'].map((url) =>
@@ -427,23 +461,23 @@ async function main() {
     ),
     markDataSource(localStreamData.gen(), 'custom'),
     overlayStreamData.gen(),
-  ]
+  ];
 
   for await (const rawStreams of combineDataSources(dataSources)) {
-    const streams = idGen.process(rawStreams)
-    updateState({ streams })
+    const streams = idGen.process(rawStreams);
+    updateState({ streams });
   }
 }
 
 if (require.main === module) {
-  app.commandLine.appendSwitch('high-dpi-support', 1)
-  app.commandLine.appendSwitch('force-device-scale-factor', 1)
-  app.enableSandbox()
+  app.commandLine.appendSwitch('high-dpi-support', 1);
+  app.commandLine.appendSwitch('force-device-scale-factor', 1);
+  app.enableSandbox();
   app
     .whenReady()
     .then(main)
     .catch((err) => {
-      console.trace(err.toString())
-      process.exit(1)
-    })
+      console.trace(err.toString());
+      process.exit(1);
+    });
 }

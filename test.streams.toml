@@ -6,21 +6,16 @@ notes  = "Live protest streams from around the world."
 source = "woke.net"
 
 [[streams]]
-kind  = "web"
-label = "zombocom"
-link  = "https://html5zombo.com"
+kind = "video"
+label = "Tyrant Finder U.K."
+link = "https://www.youtube.com/watch?v=41ssraiDW3A"
 
 [[streams]]
 kind = "video"
-label = "Ruptly"
-link = "https://www.youtube.com/watch?v=yRaexSu4N1Y"
-
-[[streams]]
-kind = "video"
-label = "Subject Access"
-link = "https://www.youtube.com/watch?v=ojpbjFsr04c"
+label = "ResistanceGB"
+link = "https://www.youtube.com/watch?v=2J6RLvJ5uM8"
 
 [[streams]]
 kind = "video"
 label = "Immortal Aliens"
-link = "https://www.youtube.com/watch?v=gn62m0Mgwkc"
+link = "https://www.youtube.com/watch?v=YmW27Nj0_3A"

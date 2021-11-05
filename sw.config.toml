@@ -1,7 +1,11 @@
 [window]
 # Window dimensions
+
 #width = 1920
 #height = 1080
+
+#width = 1440
+#height = 810
 
 # Position a frameless window (useful for capturing w/ fixed screen positions)
 #x = 0
