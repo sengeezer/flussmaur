@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import Navigation from "@/components/Navigation";
+import ApolloClientProvider from "@/components/ApolloClientProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,7 +22,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <div className="min-h-screen bg-gray-50">
-          {children}
+          <ApolloClientProvider>
+            <Navigation />
+            <main>
+              {children}
+            </main>
+          </ApolloClientProvider>
         </div>
       </body>
     </html>

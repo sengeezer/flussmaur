@@ -1,3 +1,19 @@
+import { StreamService } from './services/streamService';
+
+const streamServices = new Map<string, StreamService>();
+
+// Get or create stream service instance for the context
+function getStreamService(context: any): StreamService {
+  const key = 'default'; // Could be user-specific in the future
+  
+  if (!streamServices.has(key)) {
+    const service = new StreamService(context.prisma);
+    streamServices.set(key, service);
+  }
+  
+  return streamServices.get(key)!;
+}
+
 export const resolvers = {
   Query: {
     me: async (parent: any, args: any, context: any) => {
@@ -8,18 +24,22 @@ export const resolvers = {
     },
 
     streams: async (parent: any, args: any, context: any) => {
+      const streamService = getStreamService(context);
+      const streams = await streamService.getStreams();
+      
+      // Apply filters
       const { limit = 50, offset = 0, search } = args;
-      return context.prisma.stream.findMany({
-        take: limit,
-        skip: offset,
-        where: search ? {
-          OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { url: { contains: search, mode: 'insensitive' } },
-          ],
-        } : undefined,
-        orderBy: { createdAt: 'desc' },
-      });
+      let filteredStreams = streams;
+      
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredStreams = streams.filter(stream => 
+          stream.title.toLowerCase().includes(searchLower) ||
+          stream.url.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      return filteredStreams.slice(offset, offset + limit);
     },
 
     sessions: async (parent: any, args: any, context: any) => {
@@ -48,13 +68,17 @@ export const resolvers = {
       }
 
       const { url, title, platform } = args;
-      return context.prisma.stream.create({
-        data: {
-          url,
-          title,
-          platform: platform || 'GENERIC',
-        },
-      });
+      const streamService = getStreamService(context);
+      
+      const streamData = {
+        url,
+        title,
+        platform: platform || 'generic',
+        isLive: false,
+        metadata: { createdBy: context.user.id },
+      };
+
+      return streamService.addManualStream(streamData);
     },
 
     createSession: async (parent: any, args: any, context: any) => {
