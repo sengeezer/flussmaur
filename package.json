@@ -1,13 +1,23 @@
 {
   "name": "streamwall",
   "version": "0.0.1",
-  "description": "View streams in a grid",
-  "main": "src/index.js",
+  "description": "View streams in a grid - Modern web application",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "webpack",
-    "start": "npm run build -- --display=errors-only && electron dist",
-    "start-local": "npm run build -- --display=errors-only && electron dist --control.address=http://localhost:4444 --control.username=streamwall --control.password=local-dev",
-    "test": "jest"
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces",
+    "start": "npm run start --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "clean": "npm run clean --workspaces",
+    "build:web": "npm run build --workspace=packages/streamwall-web",
+    "build:api": "npm run build --workspace=packages/streamwall-api",
+    "dev:web": "npm run dev --workspace=packages/streamwall-web",
+    "dev:api": "npm run dev --workspace=packages/streamwall-api",
+    "migrate": "npm run migrate --workspace=packages/streamwall-api"
   },
   "author": "Max Goodhart <c@chromakode.com>",
   "license": "MIT",

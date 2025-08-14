@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  role      UserRole @default(VIEWER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sessions  Session[]
+  createdSessions Session[] @relation("SessionCreator")
+
+  @@map("users")
+}
+
+model Stream {
+  id        String       @id @default(cuid())
+  url       String       @unique
+  title     String
+  platform  StreamPlatform
+  thumbnail String?
+  metadata  Json?
+  isLive    Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Relations
+  views     View[]
+  dataSources StreamDataSource[]
+
+  @@map("streams")
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  gridCols    Int      @default(3)
+  gridRows    Int      @default(3)
+  isPublic    Boolean  @default(false)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creator     User   @relation("SessionCreator", fields: [createdBy], references: [id])
+  users       User[]
+  views       View[]
+
+  @@map("sessions")
+}
+
+model View {
+  id           String  @id @default(cuid())
+  sessionId    String
+  streamId     String?
+  positionX    Int
+  positionY    Int
+  width        Int     @default(1)
+  height       Int     @default(1)
+  audioEnabled Boolean @default(false)
+  blurred      Boolean @default(false)
+  visible      Boolean @default(true)
+
+  // Relations
+  session      Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  stream       Stream? @relation(fields: [streamId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, positionX, positionY])
+  @@map("views")
+}
+
+model DataSource {
+  id              String          @id @default(cuid())
+  name            String
+  type            DataSourceType
+  url             String?
+  filePath        String?
+  refreshInterval Int             @default(300) // seconds
+  enabled         Boolean         @default(true)
+  lastSync        DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  streams         StreamDataSource[]
+
+  @@map("data_sources")
+}
+
+model StreamDataSource {
+  streamId     String
+  dataSourceId String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  stream       Stream     @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  dataSource   DataSource @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+
+  @@id([streamId, dataSourceId])
+  @@map("stream_data_sources")
+}
+
+enum UserRole {
+  VIEWER
+  EDITOR
+  ADMIN
+}
+
+enum StreamPlatform {
+  YOUTUBE
+  TWITCH
+  FACEBOOK
+  INSTAGRAM
+  GENERIC
+  HLS
+  RTMP
+}
+
+enum DataSourceType {
+  JSON_API
+  TOML_FILE
+  MANUAL
+}

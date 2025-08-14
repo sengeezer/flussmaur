@@ -1,0 +1,61 @@
+# Docker Development Environment
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: streamwall
+      POSTGRES_USER: streamwall
+      POSTGRES_PASSWORD: streamwall_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - streamwall
+
+  api:
+    build:
+      context: ./packages/streamwall-api
+      dockerfile: Dockerfile.dev
+    environment:
+      DATABASE_URL: postgresql://streamwall:streamwall_dev@postgres:5432/streamwall
+      JWT_SECRET: dev-secret-key
+      NODE_ENV: development
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./packages/streamwall-api:/app
+      - ./packages/streamwall-shared:/shared
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - streamwall
+
+  web:
+    build:
+      context: ./packages/streamwall-web
+      dockerfile: Dockerfile.dev
+    environment:
+      NEXT_PUBLIC_GRAPHQL_URL: http://localhost:4000/graphql
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/streamwall-web:/app
+      - ./packages/streamwall-shared:/shared
+      - /app/node_modules
+    depends_on:
+      - api
+    networks:
+      - streamwall
+
+volumes:
+  postgres_data:
+
+networks:
+  streamwall:
+    driver: bridge
