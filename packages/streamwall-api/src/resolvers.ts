@@ -116,7 +116,7 @@ export const resolvers = {
 
   Subscription: {
     streamAdded: {
-      subscribe: () => context.pubsub.asyncIterator(['STREAM_ADDED']),
+      subscribe: (parent: any, args: any, context: any) => context.pubsub.asyncIterator(['STREAM_ADDED']),
     },
     sessionUpdated: {
       subscribe: (parent: any, args: any, context: any) => {
