@@ -1,4 +1,6 @@
 // Additional type definitions and legacy compatibility types
+import { StreamData, ViewState } from './index';
+
 export interface Rectangle {
   x: number;
   y: number;

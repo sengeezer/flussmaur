@@ -11,7 +11,7 @@ export interface Context {
 const prisma = new PrismaClient();
 const pubsub = new PubSub();
 
-export function createContext({ req }: { req?: any }): Context {
+export async function createContext({ req }: { req?: any }): Promise<Context> {
   let user = null;
 
   // Extract JWT token from Authorization header
