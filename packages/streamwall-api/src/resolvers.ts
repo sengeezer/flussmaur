@@ -1,6 +1,10 @@
 import { StreamService } from './services/streamService';
+import { SubscriptionService } from './services/subscriptionService';
+import { PubSub } from 'graphql-subscriptions';
 
 const streamServices = new Map<string, StreamService>();
+const pubsub = new PubSub();
+const subscriptionService = new SubscriptionService(pubsub);
 
 // Get or create stream service instance for the context
 function getStreamService(context: any): StreamService {
@@ -139,16 +143,8 @@ export const resolvers = {
     },
   },
 
-  Subscription: {
-    streamAdded: {
-      subscribe: (parent: any, args: any, context: any) => context.pubsub.asyncIterator(['STREAM_ADDED']),
-    },
-    sessionUpdated: {
-      subscribe: (parent: any, args: any, context: any) => {
-        return context.pubsub.asyncIterator([`SESSION_UPDATED_${args.sessionId}`]);
-      },
-    },
-  },
+  // Real-time subscriptions - comprehensive collaboration features
+  Subscription: subscriptionService.getSubscriptionResolvers(),
 
   // Resolvers for nested fields
   Stream: {
@@ -189,3 +185,6 @@ export const resolvers = {
     },
   },
 };
+
+// Export subscription service for use in mutations
+export { subscriptionService };

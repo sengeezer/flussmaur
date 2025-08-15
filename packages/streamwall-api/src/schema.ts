@@ -142,13 +142,72 @@ export const typeDefs = gql`
   }
 
   type Subscription {
-    # Real-time updates
+    # Stream events
     streamAdded: Stream!
     streamUpdated: Stream!
-    streamRemoved: ID!
+    streamRemoved: StreamRemovedPayload!
+    streamStatusChanged: StreamStatusPayload!
     
+    # Session events
+    sessionCreated: Session!
+    sessionDeleted: SessionDeletedPayload!
     sessionUpdated(sessionId: ID!): Session!
-    viewUpdated(sessionId: ID!): View!
+    sessionViewUpdated(sessionId: ID!): View!
+    
+    # Session collaboration events
+    sessionUserJoined(sessionId: ID!): SessionUserPayload!
+    sessionUserLeft(sessionId: ID!): SessionUserPayload!
+    userPresenceUpdated(sessionId: ID!): UserPresencePayload!
+    
+    # Grid layout events
+    gridLayoutUpdated(sessionId: ID!): GridLayoutPayload!
+    
+    # Active sessions tracking
+    activeSessionsUpdated: [Session!]!
+    
+    # Future chat feature
+    sessionMessage(sessionId: ID!): SessionMessagePayload!
+  }
+
+  # Subscription payload types
+  type StreamRemovedPayload {
+    id: ID!
+  }
+
+  type StreamStatusPayload {
+    streamId: ID!
+    isLive: Boolean!
+  }
+
+  type SessionDeletedPayload {
+    id: ID!
+  }
+
+  type SessionUserPayload {
+    sessionId: ID!
+    userId: ID!
+    user: User!
+    timestamp: DateTime!
+  }
+
+  type UserPresencePayload {
+    sessionId: ID!
+    userId: ID!
+    presence: String! # 'online' | 'away' | 'offline'
+    timestamp: DateTime!
+  }
+
+  type GridLayoutPayload {
+    sessionId: ID!
+    layout: JSON!
+    timestamp: DateTime!
+  }
+
+  type SessionMessagePayload {
+    sessionId: ID!
+    userId: ID!
+    message: String!
+    timestamp: DateTime!
   }
 
   type AuthPayload {
