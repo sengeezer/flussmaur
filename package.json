@@ -1,7 +1,7 @@
 {
-  "name": "streamwall",
-  "version": "0.0.1",
-  "description": "View streams in a grid - Modern web application",
+  "name": "flussmaur",
+  "version": "0.1.0",
+  "description": "Modern web application for viewing streams in a grid with real-time collaboration",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -12,12 +12,14 @@
     "start": "npm run start --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces",
+    "type-check": "npm run type-check --workspaces",
     "clean": "npm run clean --workspaces",
     "build:web": "npm run build --workspace=packages/streamwall-web",
     "build:api": "npm run build --workspace=packages/streamwall-api",
     "dev:web": "npm run dev --workspace=packages/streamwall-web",
     "dev:api": "npm run dev --workspace=packages/streamwall-api",
-    "migrate": "npm run migrate --workspace=packages/streamwall-api"
+    "migrate": "npm run migrate --workspace=packages/streamwall-api",
+    "vercel-build": "npm run build:web"
   },
   "author": "Max Goodhart <c@chromakode.com>",
   "license": "MIT",
