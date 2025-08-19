@@ -1,4 +1,4 @@
-import { PrismaClient, Stream } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { StreamData, DataSourceType } from 'streamwall-shared';
 import * as TOML from '@iarna/toml';
 import { promises as fs } from 'fs';
@@ -270,7 +270,7 @@ export class StreamService extends EventEmitter {
       orderBy: { createdAt: 'desc' }
     });
 
-    return streams.map((stream: Stream) => ({
+    return streams.map((stream: any) => ({
       id: stream.id,
       url: stream.url,
       title: stream.title,
