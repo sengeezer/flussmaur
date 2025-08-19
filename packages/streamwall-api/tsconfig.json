@@ -5,7 +5,6 @@
     "lib": ["ES2020"],
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,8 +13,12 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "streamwall-shared": ["../streamwall-shared/src"]
+    }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../streamwall-shared/src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

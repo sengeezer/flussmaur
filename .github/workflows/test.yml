@@ -29,6 +29,9 @@ jobs:
         env:
           CI: true
 
+      - name: Build shared package first
+        run: npm run build --workspace=packages/streamwall-shared
+
       - name: Build application
         run: npm run build
 
