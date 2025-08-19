@@ -1,27 +1,10 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:web",
   "outputDirectory": "packages/streamwall-web/.next",
-  "devCommand": "npm run dev",
+  "devCommand": "npm run dev:web",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "functions": {
-    "packages/streamwall-api/src/index.ts": {
-      "runtime": "nodejs20.x"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/graphql",
-      "destination": "/api/graphql"
-    },
-    {
-      "source": "/graphql",
-      "destination": "/api/graphql"
-    }
-  ],
   "env": {
-    "DATABASE_URL": "@database_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url"
+    "NEXT_PUBLIC_GRAPHQL_URI": "@graphql_uri"
   }
 }

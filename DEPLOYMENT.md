@@ -1,6 +1,12 @@
 # Deployment Guide
 
-## Vercel Deployment
+## Architecture
+
+Flussmaur consists of two main components:
+- **Frontend**: Next.js web application (deployable to Vercel)
+- **Backend**: GraphQL API with Prisma (deployable to Railway, Heroku, etc.)
+
+## Frontend Deployment (Vercel)
 
 ### Quick Deploy
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/sengeezer/flussmaur)
@@ -18,42 +24,94 @@
    In your Vercel dashboard, add these environment variables:
    
    ```
-   DATABASE_URL=postgresql://username:password@your-db-host:5432/flussmaur
-   NEXTAUTH_SECRET=your-random-secret-key-here
-   NEXTAUTH_URL=https://your-app.vercel.app
+   NEXT_PUBLIC_GRAPHQL_URI=https://your-api-domain.com/graphql
    ```
 
-4. **Set up Database**
-   - Use Vercel Postgres, Supabase, or any PostgreSQL provider
-   - Copy the connection string to `DATABASE_URL`
-
-5. **Deploy**
+4. **Deploy**
    - Vercel will automatically deploy when you push to the main branch
-   - The build command is automatically configured in `vercel.json`
+   - The build command is configured in `vercel.json`
 
-### Environment Variables Explained
+## Backend Deployment (GraphQL API)
 
-- **DATABASE_URL**: PostgreSQL connection string for your database
-- **NEXTAUTH_SECRET**: Random string for JWT token signing (generate with `openssl rand -base64 32`)
-- **NEXTAUTH_URL**: Your app's URL (automatically set by Vercel in production)
+### Railway (Recommended)
 
-### Database Setup
+1. **Deploy to Railway**
+   - Go to [railway.app](https://railway.app)
+   - Create a new project
+   - Connect your GitHub repository
+   - Select the `packages/streamwall-api` directory as the root
 
-After deployment, you'll need to run database migrations:
+2. **Add PostgreSQL Database**
+   - In Railway, add a PostgreSQL service
+   - Copy the connection string
 
-1. Install Vercel CLI: `npm i -g vercel`
-2. Link your project: `vercel link`
-3. Run migrations: `vercel exec -- npm run migrate`
+3. **Configure Environment Variables**
+   ```
+   DATABASE_URL=postgresql://username:password@your-db-host:5432/flussmaur
+   NODE_ENV=production
+   PORT=4000
+   ```
 
-Or use the Vercel dashboard to run a one-time command: `npm run migrate`
+4. **Set Build Configuration**
+   - Build Command: `npm run build`
+   - Start Command: `npm start`
 
-## Other Deployment Options
+### Alternative: Heroku
 
-### Docker
-A Dockerfile can be added for containerized deployments.
+1. **Create Heroku App**
+   ```bash
+   heroku create your-app-name
+   heroku addons:create heroku-postgresql:mini
+   ```
+
+2. **Deploy**
+   ```bash
+   git subtree push --prefix packages/streamwall-api heroku main
+   ```
+
+## Environment Variables Explained
+
+### Frontend (Vercel)
+- **NEXT_PUBLIC_GRAPHQL_URI**: URL to your deployed GraphQL API
+
+### Backend (Railway/Heroku)
+- **DATABASE_URL**: PostgreSQL connection string
+- **NODE_ENV**: Set to "production" for production deployments
+- **PORT**: Port for the server (usually set automatically by the platform)
+
+## Database Setup
+
+After deploying the backend, run database migrations:
 
 ### Railway
-Similar to Vercel, Railway supports Next.js deployments with PostgreSQL.
+Use the Railway CLI or web console to run: `npm run migrate`
 
-### Netlify
-For static deployments, though some server features may be limited.
+### Heroku  
+```bash
+heroku run npm run migrate --app your-app-name
+```
+
+## Full Deployment Process
+
+1. **Deploy Backend First**
+   - Deploy the GraphQL API to Railway/Heroku
+   - Set up PostgreSQL database
+   - Run migrations
+   - Get the API URL
+
+2. **Deploy Frontend**
+   - Deploy to Vercel
+   - Set `NEXT_PUBLIC_GRAPHQL_URI` to your API URL
+   - Test the connection
+
+## Local Development
+
+For local development with production APIs:
+
+```bash
+# Frontend only (connecting to production API)
+npm run dev:web
+
+# Full stack development
+npm run dev
+```

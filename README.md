@@ -1,10 +1,7 @@
 # Flussmaur
 
-:construction: Early WIP release! :construction:
-
 Flussmaur (formerly Streamwall) makes it easy to compose multiple livestreams into a mosaic, with source attributions and audio control. This is a modern Next.js-based version with real-time collaboration features.
 
-![Screenshot of Flussmaur displaying a grid of streams](screenshot.png)
 
 ## Modern Architecture
 
@@ -87,10 +84,6 @@ Ensure your `DATABASE_URL` is correct and the database is accessible. For Vercel
 ### Build Errors on Vercel
 
 Check that all dependencies are properly installed and environment variables are configured in your Vercel dashboard.
-
-## Legacy Electron Version
-
-The original Electron-based version is available in the `electron-legacy` branch. The modern web-based version provides better performance and deployment options.
 
 ## Credits
 
